@@ -6,6 +6,7 @@ import {
   OgcApiCollectionInfo,
   OgcApiDocument,
   OgcApiEndpointInfo,
+  TileMatrixSet,
 } from './model.js';
 import { assertHasLinks } from './link-utils.js';
 import { EndpointError } from '../shared/errors.js';
@@ -139,6 +140,18 @@ export function parseCollectionParameters(
       name: prop,
       type: 'string',
     }));
+  }
+  return [];
+}
+
+export function parseTileMatrixSets(doc: OgcApiDocument): TileMatrixSet[] {
+  if (Array.isArray(doc.tileMatrixSets)) {
+    return doc.tileMatrixSets.map((set) => {
+      return {
+        id: set.id,
+        uri: set.uri,
+      };
+    });
   }
   return [];
 }

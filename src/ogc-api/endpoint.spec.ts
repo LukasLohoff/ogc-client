@@ -1537,6 +1537,17 @@ describe('OgcApiEndpoint', () => {
         );
       });
     });
+    describe('#getTileMatrixSets', () => {
+      it('returns the correct tile matrix sets', async () => {
+        const result = await endpoint.getTileMatrixSets();
+        expect(result).toEqual([
+          {
+            id: 'WebMercatorQuad',
+            uri: 'http://www.opengis.net/def/tilematrixset/OGC/1.0/WebMercatorQuad',
+          },
+        ]);
+      });
+    });
   });
   describe('a failure happens while parsing the endpoint capabilities', () => {
     beforeEach(() => {

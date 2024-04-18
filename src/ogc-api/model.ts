@@ -70,6 +70,13 @@ export type OgcApiDocument = {
     title: string;
     href: string;
   }[];
+  tilesets?: {
+    title: string;
+    tileMatrixSetURI: string;
+    crs: string;
+    dataType: string;
+    links: OgcApiDocumentLinks[];
+  }[];
 } & Record<string, unknown>;
 
 interface OgcApiItemExternalId {
@@ -123,3 +130,8 @@ export type OgcApiRecord = {
 };
 
 export type OgcApiCollectionItem = OgcApiRecord;
+
+export interface TileMatrixSet {
+  id: string;
+  uri: string;
+}

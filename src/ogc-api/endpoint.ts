@@ -8,6 +8,7 @@ import {
   parseCollections,
   parseConformance,
   parseEndpointInfo,
+  parseTileMatrixSets,
 } from './info.js';
 import {
   ConformanceClass,
@@ -15,6 +16,7 @@ import {
   OgcApiCollectionItem,
   OgcApiDocument,
   OgcApiEndpointInfo,
+  TileMatrixSet,
 } from './model.js';
 import {
   fetchCollectionRoot,
@@ -84,6 +86,7 @@ export default class OgcApiEndpoint {
   get conformanceClasses(): Promise<ConformanceClass[]> {
     return this.conformance.then(parseConformance);
   }
+
   /**
    * A Promise which resolves to an array of all collection identifiers as strings.
    */
@@ -308,6 +311,70 @@ export default class OgcApiEndpoint {
       })
       .catch((error) => {
         console.error('Error fetching collection items URL:', error);
+        throw error;
+      });
+  }
+
+  /**
+   * Retrieve the tile matrix sets advertised by the endpoint.
+   */
+  async getTileMatrixSets(): Promise<TileMatrixSet[]> {
+    const document = await fetchLink(
+      await this.root,
+      ['http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes'],
+      this.baseUrl
+    );
+    return parseTileMatrixSets(document);
+  }
+
+  /**
+   * Asynchronously retrieves a URL for the tiles of a specified collection, with a tile matrix set.
+   * @param collectionId - The unique identifier for the collection.
+   * @param tileMatrixSetUri - The URI of the tile matrix set to use. Default is 'http://www.opengis.net/def/tilematrixset/OGC/1.0/WebMercatorQuad'.
+   * @param options - An object containing optional parameters:
+   *  - outputFormat: The MIME type for the output format. Default is 'json'.
+   */
+  getCollectionTileUrl(
+    collectionId: string,
+    tileMatrixSetUri: string = 'http://www.opengis.net/def/tilematrixset/OGC/1.0/WebMercatorQuad',
+    options: {
+      outputFormat?: MimeType;
+    } = {}
+  ): Promise<string> {
+    return this.getCollectionDocument(collectionId)
+      .then(async (collectionDoc) => {
+        const collectionTilesLink = getLinkUrl(
+          collectionDoc,
+          'http://www.opengis.net/def/rel/ogc/1.0/tilesets-vector',
+          this.baseUrl
+        );
+
+        const tilesetUrl = await fetchDocument(collectionTilesLink).then(
+          (doc) => {
+            const tileset = doc.tilesets.find(
+              (tileset) => tileset.tileMatrixSetURI === tileMatrixSetUri
+            );
+            if (tileset && tileset.links && tileset.links.length > 0) {
+              return getLinkUrl(tileset, 'self', this.baseUrl);
+            } else {
+              throw new Error('No links found for the tileset');
+            }
+          }
+        );
+
+        const url = new URL(tilesetUrl);
+
+        if (options.outputFormat !== undefined) {
+          url.searchParams.set('f', options.outputFormat);
+        }
+
+        return url.toString();
+      })
+      .catch((error) => {
+        console.error(
+          'Error fetching collection tiles URL:',
+          error.message || error
+        );
         throw error;
       });
   }
